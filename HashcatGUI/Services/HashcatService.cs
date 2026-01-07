@@ -150,19 +150,19 @@ public class HashcatService : IDisposable
 
             case 3: // Brute-force
                 if (!string.IsNullOrEmpty(config.Mask))
-                    args.Append($"\"{config.Mask}\"");
+                    args.Append(config.Mask); // No quotes for masks
                 break;
 
             case 6: // Hybrid Wordlist + Mask
                 if (!string.IsNullOrEmpty(config.Wordlist))
                     args.Append($"\"{config.Wordlist}\" ");
                 if (!string.IsNullOrEmpty(config.Mask))
-                    args.Append($"\"{config.Mask}\"");
+                    args.Append(config.Mask); // No quotes for masks
                 break;
 
             case 7: // Hybrid Mask + Wordlist
                 if (!string.IsNullOrEmpty(config.Mask))
-                    args.Append($"\"{config.Mask}\" ");
+                    args.Append($"{config.Mask} "); // No quotes for masks
                 if (!string.IsNullOrEmpty(config.Wordlist))
                     args.Append($"\"{config.Wordlist}\"");
                 break;
