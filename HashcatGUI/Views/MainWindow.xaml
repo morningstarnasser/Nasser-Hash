@@ -1,0 +1,279 @@
+<Window x:Class="HashcatGUI.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:vm="clr-namespace:HashcatGUI.ViewModels"
+        xmlns:views="clr-namespace:HashcatGUI.Views"
+        xmlns:converters="clr-namespace:HashcatGUI.Converters"
+        mc:Ignorable="d"
+        Title="Nasser-Hash - Professional Password Recovery Tool"
+        Height="900" Width="1400"
+        MinHeight="700" MinWidth="1200"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource PrimaryDarkBrush}"
+        TextElement.Foreground="{StaticResource TextPrimaryBrush}"
+        TextElement.FontWeight="Regular"
+        TextElement.FontSize="14"
+        FontFamily="{materialDesign:MaterialDesignFont}">
+
+    <Window.DataContext>
+        <vm:MainViewModel/>
+    </Window.DataContext>
+
+    <Window.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+        <converters:InverseBoolConverter x:Key="InverseBool"/>
+        <converters:StatusToColorConverter x:Key="StatusToColor"/>
+        <converters:ProgressToColorConverter x:Key="ProgressToColor"/>
+        <converters:EqualityConverter x:Key="EqualityConverter"/>
+        <converters:NullToVisibilityConverter x:Key="NullToVisibility"/>
+
+        <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
+            <views:DashboardView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:AttackViewModel}">
+            <views:AttackView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:WordlistsViewModel}">
+            <views:WordlistsView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:BenchmarkViewModel}">
+            <views:BenchmarkView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:PotfileViewModel}">
+            <views:PotfileView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+            <views:SettingsView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:WalletAnalyzerViewModel}">
+            <views:WalletAnalyzerView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SmartAttackViewModel}">
+            <views:SmartAttackView/>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="280"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Sidebar Navigation -->
+        <Border Grid.Column="0" Background="{StaticResource PrimaryMediumBrush}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Logo/Title -->
+                <StackPanel Grid.Row="0" Margin="24,32,24,24">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <materialDesign:PackIcon Kind="ShieldLock" Width="48" Height="48"
+                                                  Foreground="{StaticResource AccentBrush}"/>
+                        <TextBlock Text="NASSER" FontSize="28" FontWeight="Bold"
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center" Margin="12,0,0,0"/>
+                    </StackPanel>
+                    <TextBlock Text="Hash Professional" FontSize="14"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                </StackPanel>
+
+                <!-- Navigation Menu -->
+                <StackPanel Grid.Row="1" Margin="12,0">
+                    <RadioButton Style="{StaticResource NavButton}"
+                                 IsChecked="True"
+                                 Command="{Binding NavigateToDashboardCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="ViewDashboard" Width="24" Height="24" VerticalAlignment="Center"/>
+                            <TextBlock Text="Dashboard" FontSize="15" Margin="16,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+
+                    <RadioButton Style="{StaticResource NavButton}"
+                                 Command="{Binding NavigateToAttackCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Sword" Width="24" Height="24" VerticalAlignment="Center"/>
+                            <TextBlock Text="Attack" FontSize="15" Margin="16,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+
+                    <RadioButton Style="{StaticResource NavButton}"
+                                 Command="{Binding NavigateToWordlistsCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="FormatListBulleted" Width="24" Height="24" VerticalAlignment="Center"/>
+                            <TextBlock Text="Wordlists &amp; Rules" FontSize="15" Margin="16,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+
+                    <RadioButton Style="{StaticResource NavButton}"
+                                 Command="{Binding NavigateToBenchmarkCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Speedometer" Width="24" Height="24" VerticalAlignment="Center"/>
+                            <TextBlock Text="Benchmark" FontSize="15" Margin="16,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+
+                    <RadioButton Style="{StaticResource NavButton}"
+                                 Command="{Binding NavigateToPotfileCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Key" Width="24" Height="24" VerticalAlignment="Center"/>
+                            <TextBlock Text="Potfile" FontSize="15" Margin="16,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+
+                    <RadioButton Style="{StaticResource NavButton}"
+                                 Command="{Binding NavigateToWalletAnalyzerCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="WalletOutline" Width="24" Height="24" VerticalAlignment="Center"/>
+                            <TextBlock Text="Wallet Analyzer" FontSize="15" Margin="16,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+
+                    <RadioButton Style="{StaticResource NavButton}"
+                                 Command="{Binding NavigateToSmartAttackCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="AutoFix" Width="24" Height="24" VerticalAlignment="Center"/>
+                            <TextBlock Text="Smart Attack" FontSize="15" Margin="16,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+
+                    <Separator Margin="0,16" Background="{StaticResource PrimaryLightBrush}"/>
+
+                    <RadioButton Style="{StaticResource NavButton}"
+                                 Command="{Binding NavigateToSettingsCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Cog" Width="24" Height="24" VerticalAlignment="Center"/>
+                            <TextBlock Text="Settings" FontSize="15" Margin="16,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </RadioButton>
+                </StackPanel>
+
+                <!-- Status Panel -->
+                <Border Grid.Row="2" Style="{StaticResource ModernCard}" Margin="16,16,16,24"
+                        Padding="16">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <Ellipse Width="10" Height="10"
+                                     Fill="{Binding HashcatStatus, Converter={StaticResource StatusToColor}}"/>
+                            <TextBlock Text="{Binding HashcatStatus}"
+                                       Margin="8,0,0,0" FontWeight="SemiBold"
+                                       Foreground="{Binding HashcatStatus, Converter={StaticResource StatusToColor}}"/>
+                        </StackPanel>
+
+                        <ProgressBar Value="{Binding ProgressPercent}"
+                                     Style="{StaticResource ModernProgressBar}"
+                                     Margin="0,0,0,12"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel Grid.Column="0" Grid.Row="0" Margin="0,0,0,8">
+                                <TextBlock Text="Speed" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                <TextBlock Text="{Binding SpeedDisplay}" FontSize="13" FontWeight="SemiBold"
+                                           Foreground="{StaticResource AccentBrush}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Grid.Row="0" Margin="0,0,0,8">
+                                <TextBlock Text="ETA" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                <TextBlock Text="{Binding EtaDisplay}" FontSize="13" FontWeight="SemiBold"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="0" Grid.Row="1">
+                                <TextBlock Text="Cracked" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource SuccessBrush}">
+                                    <Run Text="{Binding CrackedCount}"/><Run Text="/"/><Run Text="{Binding TotalHashes}"/>
+                                </TextBlock>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Grid.Row="1">
+                                <TextBlock Text="Progress" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                <TextBlock FontSize="13" FontWeight="SemiBold">
+                                    <Run Text="{Binding ProgressPercent, StringFormat={}{0:F1}}"/><Run Text="%"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Control Buttons -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,16,0,0"
+                                    Visibility="{Binding IsHashcatRunning, Converter={StaticResource BoolToVisibility}}">
+                            <Button Style="{StaticResource MaterialDesignIconButton}"
+                                    Command="{Binding PauseAttackCommand}"
+                                    ToolTip="Pause">
+                                <materialDesign:PackIcon Kind="Pause" Width="20" Height="20"/>
+                            </Button>
+                            <Button Style="{StaticResource MaterialDesignIconButton}"
+                                    Command="{Binding ResumeAttackCommand}"
+                                    ToolTip="Resume" Margin="8,0">
+                                <materialDesign:PackIcon Kind="Play" Width="20" Height="20"/>
+                            </Button>
+                            <Button Style="{StaticResource MaterialDesignIconButton}"
+                                    Command="{Binding StopAttackCommand}"
+                                    Foreground="{StaticResource ErrorBrush}"
+                                    ToolTip="Stop">
+                                <materialDesign:PackIcon Kind="Stop" Width="20" Height="20"/>
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- Main Content Area -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Border Grid.Row="0" Background="{StaticResource PrimaryDarkBrush}"
+                    BorderBrush="{StaticResource PrimaryLightBrush}" BorderThickness="0,0,0,1"
+                    Padding="32,20">
+                <Grid>
+                    <TextBlock Text="{Binding CurrentViewName}" FontSize="24" FontWeight="SemiBold"/>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Style="{StaticResource AccentButton}"
+                                Command="{Binding StartAttackCommand}"
+                                Visibility="{Binding IsHashcatRunning, Converter={StaticResource BoolToVisibility}, ConverterParameter=Inverse}">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="Play" Width="20" Height="20" VerticalAlignment="Center"/>
+                                <TextBlock Text="Start Attack" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Style="{StaticResource MaterialDesignFlatButton}"
+                                Command="{Binding StopAttackCommand}"
+                                Foreground="{StaticResource ErrorBrush}"
+                                Visibility="{Binding IsHashcatRunning, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="Stop" Width="20" Height="20" VerticalAlignment="Center"/>
+                                <TextBlock Text="Stop Attack" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Content -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <ContentControl Content="{Binding CurrentView}" Margin="32,24"/>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</Window>

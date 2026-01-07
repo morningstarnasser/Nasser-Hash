@@ -1,0 +1,202 @@
+<UserControl x:Class="HashcatGUI.Views.BenchmarkView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:converters="clr-namespace:HashcatGUI.Converters"
+             mc:Ignorable="d"
+             d:DesignHeight="800" d:DesignWidth="1000">
+
+    <UserControl.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+        <converters:InverseBoolConverter x:Key="InverseBool"/>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Controls -->
+        <Border Grid.Row="0" Style="{StaticResource ModernCard}" Margin="0,0,0,24">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Style="{StaticResource SectionHeader}">
+                        <materialDesign:PackIcon Kind="Speedometer" VerticalAlignment="Center"/>
+                        <Run Text="  Benchmark Configuration"/>
+                    </TextBlock>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <CheckBox Content="Benchmark All Hash Modes"
+                                  IsChecked="{Binding BenchmarkAllModes}"
+                                  Style="{StaticResource MaterialDesignCheckBox}"/>
+                    </StackPanel>
+
+                    <StackPanel Visibility="{Binding BenchmarkAllModes, Converter={StaticResource BoolToVisibility}, ConverterParameter=Inverse}">
+                        <TextBlock Text="Select Hash Mode" FontSize="12"
+                                   Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8"/>
+                        <ComboBox ItemsSource="{Binding FilteredHashModes}"
+                                  SelectedItem="{Binding SelectedHashMode}"
+                                  IsEditable="True"
+                                  Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                  materialDesign:HintAssist.Hint="Search hash mode..."
+                                  Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                                  MaxWidth="500" HorizontalAlignment="Left">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Id}" FontWeight="Bold" Width="60"/>
+                                        <TextBlock Text="{Binding Name}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <Button Style="{StaticResource SuccessButton}"
+                            Command="{Binding RunBenchmarkCommand}"
+                            IsEnabled="{Binding IsRunning, Converter={StaticResource InverseBool}}"
+                            Margin="0,0,0,8">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Play" Width="20" Height="20" VerticalAlignment="Center"/>
+                            <TextBlock Text="Run Benchmark" Margin="8,0,0,0"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button Style="{StaticResource MaterialDesignOutlinedButton}"
+                            Command="{Binding StopBenchmarkCommand}"
+                            Visibility="{Binding IsRunning, Converter={StaticResource BoolToVisibility}}"
+                            Foreground="{StaticResource ErrorBrush}">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Stop" Width="20" Height="20" VerticalAlignment="Center"/>
+                            <TextBlock Text="Stop" Margin="8,0,0,0"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Progress -->
+        <Border Grid.Row="0" Style="{StaticResource ModernCard}" Margin="0,0,0,24"
+                Visibility="{Binding IsRunning, Converter={StaticResource BoolToVisibility}}">
+            <StackPanel>
+                <TextBlock Text="{Binding CurrentlyBenchmarking, StringFormat='Benchmarking: {0}'}"
+                           FontWeight="SemiBold" Margin="0,0,0,8"/>
+                <ProgressBar Value="{Binding ProgressPercent}"
+                             Style="{StaticResource ModernProgressBar}"
+                             Height="12"/>
+                <TextBlock Text="{Binding ProgressPercent, StringFormat='{}{0:F1}%'}"
+                           HorizontalAlignment="Right" Margin="0,4,0,0"
+                           FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Results -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="350"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Results Table -->
+            <Border Grid.Column="0" Style="{StaticResource ModernCard}" Margin="0,0,12,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,16">
+                        <TextBlock Text="Benchmark Results" FontSize="18" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding Results.Count, StringFormat=' ({0} results)'}"
+                                   FontSize="14" Foreground="{StaticResource TextSecondaryBrush}"
+                                   VerticalAlignment="Bottom" Margin="8,0,0,2"/>
+                    </StackPanel>
+
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding Results}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              Background="Transparent"
+                              BorderThickness="0"
+                              CanUserSortColumns="True"
+                              CanUserResizeColumns="True">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Mode" Binding="{Binding HashMode}" Width="80"/>
+                            <DataGridTextColumn Header="Hash Name" Binding="{Binding HashName}" Width="*"/>
+                            <DataGridTextColumn Header="Speed" Binding="{Binding SpeedFormatted}" Width="150">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource SuccessBrush}"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+
+            <!-- Log Output -->
+            <Border Grid.Column="1" Style="{StaticResource ModernCard}" Margin="12,0,0,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="Output Log" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,16"/>
+
+                    <Border Grid.Row="1" Background="#1E1E3A" CornerRadius="8" Padding="12">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding BenchmarkLog}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" FontFamily="Consolas" FontSize="11"
+                                                   TextWrapping="Wrap" Margin="0,1"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Bottom Bar -->
+        <Border Grid.Row="2" Margin="0,24,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Style="{StaticResource MaterialDesignOutlinedButton}"
+                        Command="{Binding ClearResultsCommand}"
+                        Margin="0,0,12,0">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="Delete"/>
+                        <TextBlock Text="Clear Results" Margin="8,0,0,0"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Style="{StaticResource MaterialDesignOutlinedButton}"
+                        Command="{Binding ExportResultsCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="Export"/>
+                        <TextBlock Text="Export CSV" Margin="8,0,0,0"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Border>
+
+        <!-- Status -->
+        <TextBlock Grid.Row="2" Text="{Binding StatusMessage}"
+                   HorizontalAlignment="Left" VerticalAlignment="Center"
+                   Foreground="{StaticResource TextSecondaryBrush}"/>
+    </Grid>
+</UserControl>

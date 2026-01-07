@@ -1,0 +1,361 @@
+<UserControl x:Class="HashcatGUI.Views.SmartAttackView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:converters="clr-namespace:HashcatGUI.Converters"
+             mc:Ignorable="d"
+             d:DesignHeight="1000" d:DesignWidth="1000">
+
+    <UserControl.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+        <converters:InverseBoolConverter x:Key="InverseBool"/>
+        <converters:QueueStatusToIconConverter x:Key="QueueStatusToIcon"/>
+        <converters:QueueStatusToColorConverter x:Key="QueueStatusToColor"/>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Wallet Selection -->
+        <Border Grid.Row="0" Style="{StaticResource ModernCard}" Margin="0,0,0,24">
+            <StackPanel>
+                <TextBlock Style="{StaticResource SectionHeader}">
+                    <materialDesign:PackIcon Kind="AutoFix" VerticalAlignment="Center" Width="28" Height="28"/>
+                    <Run Text="  Smart Attack"/>
+                </TextBlock>
+
+                <TextBlock Text="Add wallet files to the queue for intelligent batch processing. Each wallet will be analyzed and attacked with optimized settings."
+                           Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,16" TextWrapping="Wrap"/>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox Grid.Column="0" Text="{Binding WalletFilePath, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource ModernTextBox}"
+                             materialDesign:HintAssist.Hint="Select wallet.dat file..."/>
+
+                    <Button Grid.Column="1" Style="{StaticResource MaterialDesignFlatButton}"
+                            Command="{Binding BrowseWalletCommand}" Margin="8,0,0,0"
+                            ToolTip="Browse for wallet file">
+                        <materialDesign:PackIcon Kind="FolderOpen"/>
+                    </Button>
+
+                    <Button Grid.Column="2" Style="{StaticResource AccentButton}"
+                            Command="{Binding AddWalletToQueueCommand}" Margin="8,0,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Plus" VerticalAlignment="Center"/>
+                            <TextBlock Text="Add to Queue" Margin="8,0,0,0"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- Queue -->
+        <Border Grid.Row="1" Style="{StaticResource ModernCard}" Margin="0,0,0,24">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0" Style="{StaticResource SectionHeader}">
+                        <materialDesign:PackIcon Kind="PlaylistPlay" VerticalAlignment="Center"/>
+                        <Run Text="  Wallet Queue"/>
+                    </TextBlock>
+
+                    <TextBlock Grid.Column="1" Text="{Binding QueueStatusText}"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               VerticalAlignment="Center"/>
+                </Grid>
+
+                <!-- Queue List -->
+                <Border Background="{StaticResource PrimaryLightBrush}" CornerRadius="8"
+                        MinHeight="120" MaxHeight="300" Margin="0,16,0,0">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding WalletQueue}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{StaticResource PrimaryMediumBrush}"
+                                            CornerRadius="6" Margin="4" Padding="12">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Status Icon -->
+                                            <materialDesign:PackIcon Grid.Column="0" Width="24" Height="24"
+                                                                      Kind="{Binding Status, Converter={StaticResource QueueStatusToIcon}}"
+                                                                      Foreground="{Binding Status, Converter={StaticResource QueueStatusToColor}}"
+                                                                      VerticalAlignment="Center" Margin="0,0,12,0"/>
+
+                                            <!-- File Info -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding FileName}" FontWeight="SemiBold"/>
+                                                <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}">
+                                                    <Run Text="Status: "/><Run Text="{Binding Status}"/>
+                                                </TextBlock>
+                                            </StackPanel>
+
+                                            <!-- Analysis Info -->
+                                            <TextBlock Grid.Column="2" VerticalAlignment="Center"
+                                                       Margin="12,0" FontSize="11"
+                                                       Foreground="{StaticResource TextSecondaryBrush}">
+                                                <Run Text="{Binding Analysis.EstimatedYearRange, FallbackValue=''}"/>
+                                            </TextBlock>
+
+                                            <!-- Remove Button -->
+                                            <Button Grid.Column="3"
+                                                    Style="{StaticResource MaterialDesignIconButton}"
+                                                    Command="{Binding DataContext.RemoveFromQueueCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                    CommandParameter="{Binding}"
+                                                    ToolTip="Remove from queue"
+                                                    Width="32" Height="32">
+                                                <materialDesign:PackIcon Kind="Close" Width="16" Height="16"/>
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Border>
+
+                <!-- GPU Settings & Probability -->
+                <Grid Margin="0,16,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- GPU Profile -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                        <TextBlock Text="GPU Profile:" VerticalAlignment="Center"
+                                   Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,8,0"/>
+                        <ComboBox ItemsSource="{Binding GpuProfiles}"
+                                  SelectedItem="{Binding SelectedGpuProfile}"
+                                  Width="140" Margin="0,0,16,0"/>
+                        <TextBlock Text="{Binding GpuProfileDescription}" VerticalAlignment="Center"
+                                   FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
+                    </StackPanel>
+
+                    <!-- Success Probability -->
+                    <Border Grid.Column="1" Background="#1A3A1A" CornerRadius="6" Padding="12,6" Margin="8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="ChartDonut" VerticalAlignment="Center"
+                                                     Foreground="#4CAF50" Width="20" Height="20"/>
+                            <TextBlock Text="Success:" VerticalAlignment="Center" Margin="8,0,4,0"
+                                       Foreground="#B0B0B0"/>
+                            <TextBlock Text="{Binding SuccessProbabilityText}" FontWeight="Bold"
+                                       Foreground="#4CAF50" FontSize="16" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Session Buttons -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                        <Button Style="{StaticResource MaterialDesignFlatButton}"
+                                Command="{Binding SaveCurrentSessionCommand}"
+                                ToolTip="Save current session" Padding="8,4">
+                            <materialDesign:PackIcon Kind="ContentSave" Width="20" Height="20"/>
+                        </Button>
+                        <Button Style="{StaticResource MaterialDesignFlatButton}"
+                                Command="{Binding RefreshSessionsCommand}"
+                                ToolTip="Refresh saved sessions" Padding="8,4">
+                            <materialDesign:PackIcon Kind="Refresh" Width="20" Height="20"/>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Saved Sessions -->
+                <Expander Header="Saved Sessions" Margin="0,12,0,0"
+                          Visibility="{Binding HasSavedSessions, Converter={StaticResource BoolToVisibility}}">
+                    <Border Background="{StaticResource PrimaryLightBrush}" CornerRadius="6" Padding="8" MaxHeight="150">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding SavedSessions}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{StaticResource PrimaryMediumBrush}"
+                                                CornerRadius="4" Margin="2" Padding="8">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12"/>
+                                                    <TextBlock FontSize="10" Foreground="{StaticResource TextSecondaryBrush}">
+                                                        <Run Text="{Binding State}"/> - <Run Text="{Binding CreatedAt, StringFormat='dd.MM.yyyy HH:mm'}"/>
+                                                    </TextBlock>
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="1" Text="{Binding Profile.SuccessProbability, StringFormat='P0'}"
+                                                           VerticalAlignment="Center" Margin="8,0" FontSize="11"
+                                                           Foreground="#4CAF50"/>
+                                                <Button Grid.Column="2" Style="{StaticResource MaterialDesignIconButton}"
+                                                        Command="{Binding DataContext.LoadSessionCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}" ToolTip="Load session" Width="28" Height="28">
+                                                    <materialDesign:PackIcon Kind="Play" Width="14" Height="14"/>
+                                                </Button>
+                                                <Button Grid.Column="3" Style="{StaticResource MaterialDesignIconButton}"
+                                                        Command="{Binding DataContext.DeleteSessionCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}" ToolTip="Delete session" Width="28" Height="28">
+                                                    <materialDesign:PackIcon Kind="Delete" Width="14" Height="14"/>
+                                                </Button>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+                </Expander>
+
+                <!-- Control Buttons -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                    <Button Style="{StaticResource MaterialDesignOutlinedButton}"
+                            Command="{Binding StopAttackCommand}"
+                            Visibility="{Binding IsAttackRunning, Converter={StaticResource BoolToVisibility}}"
+                            Foreground="{StaticResource ErrorBrush}" Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Stop" VerticalAlignment="Center"/>
+                            <TextBlock Text="Stop" Margin="8,0,0,0"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button Style="{StaticResource AccentButton}"
+                            Command="{Binding StartQueueProcessingCommand}"
+                            IsEnabled="{Binding IsAttackRunning, Converter={StaticResource InverseBool}}">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Play" VerticalAlignment="Center"/>
+                            <TextBlock Text="Start Queue" Margin="8,0,0,0"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Progress & Log -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Progress Panel -->
+            <Border Grid.Column="0" Style="{StaticResource ModernCard}" Margin="0,0,12,0">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SectionHeader}">
+                        <materialDesign:PackIcon Kind="ChartLine" VerticalAlignment="Center"/>
+                        <Run Text="  Progress"/>
+                    </TextBlock>
+
+                    <!-- Current Phase -->
+                    <TextBlock Text="Current Phase" FontSize="11"
+                               Foreground="{StaticResource TextSecondaryBrush}" Margin="0,8,0,4"/>
+                    <TextBlock Text="{Binding CurrentPhaseName}" FontWeight="SemiBold" FontSize="16"/>
+
+                    <!-- Overall Progress -->
+                    <TextBlock Text="Overall Progress" FontSize="11"
+                               Foreground="{StaticResource TextSecondaryBrush}" Margin="0,16,0,4"/>
+                    <ProgressBar Value="{Binding OverallProgress}" Maximum="100"
+                                 Style="{StaticResource MaterialDesignLinearProgressBar}"
+                                 Foreground="{StaticResource AccentBrush}" Height="8"/>
+                    <TextBlock Margin="0,4,0,0" FontSize="12">
+                        <Run Text="{Binding OverallProgress, StringFormat='{}{0:F1}%'}"/>
+                    </TextBlock>
+
+                    <!-- GPU Stats -->
+                    <Grid Margin="0,24,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="GPU Temp" FontSize="11"
+                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock FontSize="18" FontWeight="SemiBold">
+                                <Run Text="{Binding GpuTemperature}"/><Run Text="°C"/>
+                            </TextBlock>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="GPU Load" FontSize="11"
+                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock FontSize="18" FontWeight="SemiBold">
+                                <Run Text="{Binding GpuUtilization}"/><Run Text="%"/>
+                            </TextBlock>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Speed" FontSize="11"
+                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock Text="{Binding GpuSpeed}" FontSize="18" FontWeight="SemiBold"
+                                       Foreground="{StaticResource AccentBrush}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- ETA -->
+                    <TextBlock Text="Estimated Time Remaining" FontSize="11"
+                               Foreground="{StaticResource TextSecondaryBrush}" Margin="0,24,0,4"/>
+                    <TextBlock Text="{Binding EstimatedTimeRemaining}" FontSize="24" FontWeight="Bold"
+                               Foreground="{StaticResource AccentBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Log Panel -->
+            <Border Grid.Column="1" Style="{StaticResource ModernCard}" Margin="12,0,0,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0">
+                        <TextBlock Style="{StaticResource SectionHeader}">
+                            <materialDesign:PackIcon Kind="Console" VerticalAlignment="Center"/>
+                            <Run Text="  Attack Log"/>
+                        </TextBlock>
+
+                        <Button Style="{StaticResource MaterialDesignIconButton}"
+                                Command="{Binding ClearLogCommand}"
+                                HorizontalAlignment="Right" ToolTip="Clear log">
+                            <materialDesign:PackIcon Kind="Delete" Width="18" Height="18"/>
+                        </Button>
+                    </Grid>
+
+                    <Border Grid.Row="1" Background="#0D0D1A" CornerRadius="8" Margin="0,8,0,0">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding AttackLog}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" FontFamily="Consolas" FontSize="11"
+                                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                                   Padding="8,2" TextWrapping="Wrap"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>
