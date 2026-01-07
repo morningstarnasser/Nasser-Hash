@@ -433,7 +433,13 @@ public partial class SmartAttackViewModel : ViewModelBase
     private void StopAttack()
     {
         IsAttackRunning = false;
+        App.Hashcat.Stop();
         AddLog("Attack stopped by user.");
+
+        // Reset GPU values
+        GpuTemperature = "--";
+        GpuUtilization = "--";
+        GpuSpeed = "0 H/s";
     }
 
     [RelayCommand]
