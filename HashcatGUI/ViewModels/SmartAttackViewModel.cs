@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -15,6 +16,8 @@ namespace HashcatGUI.ViewModels;
 public partial class SmartAttackViewModel : ViewModelBase
 {
     private MainViewModel? _mainViewModel;
+    private int _lastExitCode = -1;
+    private TaskCompletionSource<int>? _processCompletionSource;
 
     [ObservableProperty]
     private string _walletFilePath = string.Empty;
@@ -132,9 +135,11 @@ public partial class SmartAttackViewModel : ViewModelBase
 
     private void OnHashcatProcessExited(object? sender, int exitCode)
     {
+        _lastExitCode = exitCode;
+        _processCompletionSource?.TrySetResult(exitCode);
+
         Application.Current.Dispatcher.Invoke(() =>
         {
-            IsAttackRunning = false;
             var resultMessage = exitCode switch
             {
                 0 => "SUCCESS! Password cracked!",
@@ -142,14 +147,12 @@ public partial class SmartAttackViewModel : ViewModelBase
                 2 => "Aborted by user",
                 _ => $"Finished (Exit code: {exitCode})"
             };
-            AddLog($"Attack finished: {resultMessage}");
-            CurrentPhaseName = resultMessage;
+            AddLog($"Phase finished: {resultMessage}");
 
             // Update session state
-            if (CurrentSession != null)
+            if (CurrentSession != null && exitCode == 0)
             {
-                var newState = exitCode == 0 ? SessionState.Completed : SessionState.Exhausted;
-                SessionService.UpdateSessionState(CurrentSession, newState);
+                SessionService.UpdateSessionState(CurrentSession, SessionState.Completed);
             }
         });
     }
@@ -428,13 +431,20 @@ public partial class SmartAttackViewModel : ViewModelBase
         }
 
         IsAttackRunning = true;
+        var totalWallets = readyWallets.Count;
+        var currentWalletIndex = 0;
+        var crackedCount = 0;
+
+        AddLog($"=== Starting queue processing: {totalWallets} wallets ===");
 
         foreach (var wallet in readyWallets)
         {
             if (!IsAttackRunning) break; // User stopped
 
+            currentWalletIndex++;
             wallet.Status = QueueStatus.Running;
-            CurrentPhaseName = $"Processing: {wallet.FileName}";
+            CurrentPhaseName = $"Wallet {currentWalletIndex}/{totalWallets}: {wallet.FileName}";
+            UpdateQueueStatus();
 
             if (wallet.Analysis != null && !string.IsNullOrEmpty(wallet.HashFile))
             {
@@ -442,39 +452,62 @@ public partial class SmartAttackViewModel : ViewModelBase
                 CurrentProfile = profile;
                 UpdateSuccessProbability();
 
-                AddLog($"=== Starting attack on {wallet.FileName} ===");
+                AddLog($"");
+                AddLog($"========================================");
+                AddLog($"WALLET {currentWalletIndex}/{totalWallets}: {wallet.FileName}");
+                AddLog($"========================================");
                 AddLog($"Profile: {profile.Name}");
-                AddLog($"Phases: {profile.Phases.Count}");
+                AddLog($"Total Phases: {profile.Phases.Count}");
                 AddLog($"Success probability: {profile.SuccessProbability:P0}");
+
+                bool walletCracked = false;
 
                 // Execute each phase
                 for (int i = 0; i < profile.Phases.Count && IsAttackRunning; i++)
                 {
                     var phase = profile.Phases[i];
-                    CurrentPhaseName = $"Phase {i + 1}/{profile.Phases.Count}: {phase.Name}";
-                    AddLog($"--- Phase {i + 1}: {phase.Name} ---");
+                    CurrentPhaseName = $"Wallet {currentWalletIndex}/{totalWallets} - Phase {i + 1}/{profile.Phases.Count}: {phase.Name}";
+                    OverallProgress = ((currentWalletIndex - 1) + (double)(i + 1) / profile.Phases.Count) / totalWallets * 100;
+
+                    AddLog($"");
+                    AddLog($"--- Phase {i + 1}/{profile.Phases.Count}: {phase.Name} ---");
 
                     var success = await ExecutePhaseAsync(wallet.HashFile, phase);
 
                     if (success)
                     {
                         wallet.Status = QueueStatus.Completed;
-                        AddLog($"SUCCESS! Password found for {wallet.FileName}");
+                        walletCracked = true;
+                        crackedCount++;
+                        AddLog($"");
+                        AddLog($"*** SUCCESS! Password found for {wallet.FileName} ***");
+                        AddLog($"");
                         break;
                     }
                 }
 
-                if (wallet.Status != QueueStatus.Completed)
+                if (!walletCracked && wallet.Status != QueueStatus.Completed)
                 {
-                    wallet.Status = QueueStatus.Failed;
-                    wallet.ErrorMessage = "All phases exhausted";
+                    wallet.Status = QueueStatus.Skipped;
+                    wallet.ErrorMessage = "All phases exhausted - no password found";
+                    AddLog($"Wallet {wallet.FileName}: All phases exhausted, moving to next...");
                 }
+
+                UpdateQueueStatus();
             }
         }
 
         IsAttackRunning = false;
+        OverallProgress = 100;
         CurrentPhaseName = "Queue completed";
-        AddLog("=== Queue processing finished ===");
+
+        AddLog($"");
+        AddLog($"========================================");
+        AddLog($"QUEUE PROCESSING COMPLETE");
+        AddLog($"========================================");
+        AddLog($"Total wallets: {totalWallets}");
+        AddLog($"Cracked: {crackedCount}");
+        AddLog($"Not cracked: {totalWallets - crackedCount}");
     }
 
     private async Task<bool> ExecutePhaseAsync(string hashFile, AttackPhase phase)
@@ -520,22 +553,52 @@ public partial class SmartAttackViewModel : ViewModelBase
         {
             AddLog($"Executing: Mode {phase.AttackMode}, Wordlist: {Path.GetFileName(phase.Wordlist ?? "N/A")}");
 
+            // Create completion source to wait for process exit
+            _processCompletionSource = new TaskCompletionSource<int>();
+            _lastExitCode = -1;
+
             App.Hashcat.HashcatPath = App.Settings.Settings.HashcatPath;
             await App.Hashcat.StartAsync(config);
 
-            // Wait for process to complete
+            // Wait for process to complete with timeout per phase
+            using var cts = new CancellationTokenSource();
+            var waitTask = _processCompletionSource.Task;
+
             while (App.Hashcat.IsRunning && IsAttackRunning)
             {
                 await Task.Delay(500);
             }
 
+            // If user stopped, don't wait for result
+            if (!IsAttackRunning)
+            {
+                App.Hashcat.Stop();
+                return false;
+            }
+
+            // Wait a bit more for the exit event to fire
+            try
+            {
+                await Task.WhenAny(waitTask, Task.Delay(2000));
+            }
+            catch { }
+
             // Check if password was cracked (exit code 0)
-            return false; // Will be set by ProcessExited event
+            var success = _lastExitCode == 0;
+            if (success)
+            {
+                AddLog("*** PASSWORD FOUND! ***");
+            }
+            return success;
         }
         catch (Exception ex)
         {
             AddLog($"Error: {ex.Message}");
             return false;
+        }
+        finally
+        {
+            _processCompletionSource = null;
         }
     }
 
