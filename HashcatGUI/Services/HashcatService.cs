@@ -441,23 +441,31 @@ public class HashcatService : IDisposable
     private static string FixJsonEscapeSequences(string json)
     {
         // Replace backslashes that are followed by characters that aren't valid JSON escapes
-        // Valid JSON escapes: \", \\, \/, \b, \f, \n, \r, \t, \uXXXX
-        var result = new StringBuilder(json.Length);
+        // Valid JSON escapes: \", \\, \/, \b, \f, \n, \r, \t, \uXXXX (where XXXX are hex digits)
+        var result = new StringBuilder(json.Length * 2);
         for (int i = 0; i < json.Length; i++)
         {
             if (json[i] == '\\' && i + 1 < json.Length)
             {
                 char next = json[i + 1];
                 // Check if it's a valid JSON escape
-                if (next == '"' || next == '\\' || next == '/' ||
-                    next == 'b' || next == 'f' || next == 'n' || next == 'r' || next == 't' ||
-                    (next == 'u' && i + 5 < json.Length)) // \uXXXX
+                bool isValidEscape = next == '"' || next == '\\' || next == '/' ||
+                                     next == 'b' || next == 'f' || next == 'n' || next == 'r' || next == 't';
+
+                // Check for \uXXXX (must be followed by exactly 4 hex digits)
+                if (!isValidEscape && next == 'u' && i + 5 < json.Length)
+                {
+                    isValidEscape = IsHexDigit(json[i + 2]) && IsHexDigit(json[i + 3]) &&
+                                    IsHexDigit(json[i + 4]) && IsHexDigit(json[i + 5]);
+                }
+
+                if (isValidEscape)
                 {
                     result.Append(json[i]);
                 }
                 else
                 {
-                    // Invalid escape - double the backslash
+                    // Invalid escape - double the backslash to make it valid JSON
                     result.Append("\\\\");
                 }
             }
@@ -467,6 +475,11 @@ public class HashcatService : IDisposable
             }
         }
         return result.ToString();
+    }
+
+    private static bool IsHexDigit(char c)
+    {
+        return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
     }
 
     // Regex patterns for parsing hashcat text output - made more flexible
