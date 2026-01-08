@@ -176,10 +176,10 @@ public class HashcatService : IDisposable
         return args.ToString().Trim();
     }
 
-    public async Task<bool> StartAsync(HashcatConfig config)
+    public Task<bool> StartAsync(HashcatConfig config)
     {
         if (IsRunning)
-            return false;
+            return Task.FromResult(false);
 
         if (string.IsNullOrEmpty(HashcatPath) || !File.Exists(HashcatPath))
             throw new FileNotFoundException("Hashcat executable not found", HashcatPath);
@@ -212,7 +212,7 @@ public class HashcatService : IDisposable
             _hashcatProcess.Start();
             _hashcatProcess.BeginOutputReadLine();
             _hashcatProcess.BeginErrorReadLine();
-            return true;
+            return Task.FromResult(true);
         }
         catch
         {
