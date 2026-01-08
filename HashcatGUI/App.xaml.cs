@@ -22,19 +22,35 @@ public partial class App : Application
         Settings.Load();
     }
 
+    private static bool _isShowingError = false;
+
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        MessageBox.Show($"An error occurred: {e.Exception.Message}", "Error",
-            MessageBoxButton.OK, MessageBoxImage.Error);
         e.Handled = true;
+
+        // Prevent recursive error dialogs
+        if (_isShowingError)
+            return;
+
+        try
+        {
+            _isShowingError = true;
+            // Log to console instead of MessageBox to prevent stack overflow
+            System.Diagnostics.Debug.WriteLine($"[ERROR] {e.Exception.Message}\n{e.Exception.StackTrace}");
+            Console.Error.WriteLine($"[ERROR] {e.Exception.Message}");
+        }
+        finally
+        {
+            _isShowingError = false;
+        }
     }
 
     private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
         if (e.ExceptionObject is Exception ex)
         {
-            MessageBox.Show($"A fatal error occurred: {ex.Message}", "Fatal Error",
-                MessageBoxButton.OK, MessageBoxImage.Error);
+            System.Diagnostics.Debug.WriteLine($"[FATAL] {ex.Message}\n{ex.StackTrace}");
+            Console.Error.WriteLine($"[FATAL] {ex.Message}");
         }
     }
 
