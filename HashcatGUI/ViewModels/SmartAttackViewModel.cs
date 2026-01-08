@@ -100,6 +100,9 @@ public partial class SmartAttackViewModel : ViewModelBase
 
                 var totalSpeed = status.Devices.Sum(d => d.Speed);
                 GpuSpeed = FormatSpeed(totalSpeed);
+
+                // Debug: Show that we received status
+                AddLog($"[STATUS] Temp: {GpuTemperature}°C, Util: {GpuUtilization}%, Speed: {GpuSpeed}");
             }
 
             // Update progress
@@ -384,7 +387,7 @@ public partial class SmartAttackViewModel : ViewModelBase
             IncrementMin = phase.IncrementMin,
             IncrementMax = phase.IncrementMax,
             StatusJson = true,
-            StatusTimer = 5,
+            StatusTimer = 1, // Update every second for responsive UI
             WorkloadProfile = SelectedGpuProfile switch
             {
                 GpuProfile.Conservative => 1,

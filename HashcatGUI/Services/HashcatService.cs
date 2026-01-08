@@ -496,9 +496,10 @@ public class HashcatService : IDisposable
                     return;
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // JSON parsing failed, will try text parsing below
+                // JSON parsing failed - log the error for debugging
+                System.Diagnostics.Debug.WriteLine($"JSON parse error: {ex.Message}");
             }
         }
 
