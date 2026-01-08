@@ -33,6 +33,7 @@
                 <TextBlock Text="Add wallet files to the queue for intelligent batch processing. Each wallet will be analyzed and attacked with optimized settings."
                            Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,16" TextWrapping="Wrap"/>
 
+                <!-- Single File Selection -->
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -46,18 +47,39 @@
 
                     <Button Grid.Column="1" Style="{StaticResource MaterialDesignFlatButton}"
                             Command="{Binding BrowseWalletCommand}" Margin="8,0,0,0"
-                            ToolTip="Browse for wallet file">
-                        <materialDesign:PackIcon Kind="FolderOpen"/>
+                            ToolTip="Browse for single wallet file">
+                        <materialDesign:PackIcon Kind="FileDocument"/>
                     </Button>
 
                     <Button Grid.Column="2" Style="{StaticResource AccentButton}"
                             Command="{Binding AddWalletToQueueCommand}" Margin="8,0,0,0">
                         <StackPanel Orientation="Horizontal">
                             <materialDesign:PackIcon Kind="Plus" VerticalAlignment="Center"/>
-                            <TextBlock Text="Add to Queue" Margin="8,0,0,0"/>
+                            <TextBlock Text="Add" Margin="8,0,0,0"/>
                         </StackPanel>
                     </Button>
                 </Grid>
+
+                <!-- Bulk Import Buttons -->
+                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                    <Button Style="{StaticResource MaterialDesignOutlinedButton}"
+                            Command="{Binding BrowseMultipleWalletsCommand}"
+                            ToolTip="Select multiple wallet files at once">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="FileDocumentMultiple" VerticalAlignment="Center"/>
+                            <TextBlock Text="Add Multiple Files" Margin="8,0,0,0"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button Style="{StaticResource MaterialDesignOutlinedButton}"
+                            Command="{Binding BrowseWalletFolderCommand}" Margin="12,0,0,0"
+                            ToolTip="Import all wallet.dat files from a folder (including subfolders)">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="FolderMultiple" VerticalAlignment="Center"/>
+                            <TextBlock Text="Import Folder" Margin="8,0,0,0"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
             </StackPanel>
         </Border>
 

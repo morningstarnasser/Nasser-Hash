@@ -214,6 +214,113 @@ public partial class SmartAttackViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private async Task BrowseMultipleWallets()
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "Select Multiple Wallet Files",
+            Filter = "Wallet Files (*.dat)|*.dat|All Files (*.*)|*.*",
+            CheckFileExists = true,
+            Multiselect = true
+        };
+
+        if (dialog.ShowDialog() == true && dialog.FileNames.Length > 0)
+        {
+            AddLog($"Adding {dialog.FileNames.Length} wallet files to queue...");
+
+            foreach (var filePath in dialog.FileNames)
+            {
+                await AddWalletToQueueInternal(filePath);
+            }
+
+            AddLog($"Finished adding {dialog.FileNames.Length} wallets.");
+        }
+    }
+
+    [RelayCommand]
+    private async Task BrowseWalletFolder()
+    {
+        var dialog = new System.Windows.Forms.FolderBrowserDialog
+        {
+            Description = "Select folder containing wallet.dat files",
+            ShowNewFolderButton = false,
+            UseDescriptionForTitle = true
+        };
+
+        if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+        {
+            var walletFiles = Directory.GetFiles(dialog.SelectedPath, "*.dat", SearchOption.AllDirectories)
+                .Where(f => !f.Contains("database", StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+
+            if (walletFiles.Length == 0)
+            {
+                AddLog("No .dat files found in selected folder.");
+                return;
+            }
+
+            AddLog($"Found {walletFiles.Length} wallet files in folder. Adding to queue...");
+
+            foreach (var filePath in walletFiles)
+            {
+                await AddWalletToQueueInternal(filePath);
+            }
+
+            AddLog($"Finished adding {walletFiles.Length} wallets from folder.");
+        }
+    }
+
+    private async Task AddWalletToQueueInternal(string filePath)
+    {
+        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            return;
+
+        // Check if already in queue
+        if (WalletQueue.Any(w => w.FilePath.Equals(filePath, StringComparison.OrdinalIgnoreCase)))
+        {
+            AddLog($"Skipped (duplicate): {Path.GetFileName(filePath)}");
+            return;
+        }
+
+        var wallet = new QueuedWallet
+        {
+            FilePath = filePath,
+            FileName = Path.GetFileName(filePath),
+            Status = QueueStatus.Pending
+        };
+
+        WalletQueue.Add(wallet);
+        UpdateQueueStatus();
+
+        // Start analysis in background
+        wallet.Status = QueueStatus.Analyzing;
+        try
+        {
+            wallet.Analysis = await WalletAnalyzerService.AnalyzeWalletAsync(filePath);
+            if (wallet.Analysis.IsValid)
+            {
+                wallet.Status = QueueStatus.Ready;
+                wallet.HashFile = await CreateTempHashFile(wallet.Analysis.HashcatHash);
+                AddLog($"Ready: {wallet.FileName}");
+            }
+            else
+            {
+                wallet.Status = QueueStatus.Failed;
+                wallet.ErrorMessage = wallet.Analysis.ErrorMessage;
+                AddLog($"Failed: {wallet.FileName} - {wallet.ErrorMessage}");
+            }
+        }
+        catch (Exception ex)
+        {
+            wallet.Status = QueueStatus.Failed;
+            wallet.ErrorMessage = ex.Message;
+            AddLog($"Error: {wallet.FileName} - {ex.Message}");
+        }
+
+        UpdateQueueStatus();
+    }
+
+    [RelayCommand]
     private async Task AddWalletToQueue()
     {
         if (string.IsNullOrWhiteSpace(WalletFilePath) || !File.Exists(WalletFilePath))
