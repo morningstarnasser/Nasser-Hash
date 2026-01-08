@@ -43,9 +43,17 @@ public class NullToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
+        bool isNullOrEmpty = value == null;
+
+        // Also treat 0 as "empty" for count values
+        if (value is int intValue)
+            isNullOrEmpty = intValue == 0;
+        else if (value is long longValue)
+            isNullOrEmpty = longValue == 0;
+
         if (parameter?.ToString() == "Inverse")
-            return value == null ? Visibility.Visible : Visibility.Collapsed;
-        return value == null ? Visibility.Collapsed : Visibility.Visible;
+            return isNullOrEmpty ? Visibility.Visible : Visibility.Collapsed;
+        return isNullOrEmpty ? Visibility.Collapsed : Visibility.Visible;
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

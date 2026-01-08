@@ -511,8 +511,8 @@ public class HashcatService : IDisposable
             }
             catch (Exception ex)
             {
-                // JSON parsing failed - log the error for debugging
-                System.Diagnostics.Debug.WriteLine($"JSON parse error: {ex.Message}");
+                // JSON parsing failed - emit error for debugging via OutputReceived
+                OutputReceived?.Invoke(this, $"[JSON ERROR] {ex.Message}");
             }
         }
 

@@ -28,11 +28,18 @@ public partial class PotfileViewModel : ViewModelBase
 
     public PotfileViewModel()
     {
-        PotfilePath = App.Settings.Settings.PotfilePath ?? string.Empty;
-        // Load asynchronously after initialization
-        if (!string.IsNullOrEmpty(PotfilePath))
+        try
         {
-            _ = LoadPotfileSafeAsync();
+            PotfilePath = App.Settings?.Settings?.PotfilePath ?? string.Empty;
+            // Load asynchronously after initialization
+            if (!string.IsNullOrEmpty(PotfilePath))
+            {
+                _ = LoadPotfileSafeAsync();
+            }
+        }
+        catch
+        {
+            PotfilePath = string.Empty;
         }
     }
 
@@ -121,18 +128,35 @@ public partial class PotfileViewModel : ViewModelBase
     [RelayCommand]
     private void BrowsePotfile()
     {
-        var dialog = new Microsoft.Win32.OpenFileDialog
+        try
         {
-            Title = "Select Potfile",
-            Filter = "Potfile (*.potfile)|*.potfile|All Files (*.*)|*.*",
-            InitialDirectory = Path.GetDirectoryName(App.Settings.Settings.HashcatPath)
-        };
+            var initialDir = string.Empty;
+            try
+            {
+                initialDir = Path.GetDirectoryName(App.Settings?.Settings?.HashcatPath ?? string.Empty);
+            }
+            catch { }
 
-        if (dialog.ShowDialog() == true)
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "Select Potfile",
+                Filter = "Potfile (*.potfile)|*.potfile|All Files (*.*)|*.*",
+                InitialDirectory = !string.IsNullOrEmpty(initialDir) ? initialDir : Environment.CurrentDirectory
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                PotfilePath = dialog.FileName;
+                if (App.Settings?.Settings != null)
+                {
+                    App.Settings.Settings.PotfilePath = dialog.FileName;
+                    App.Settings.Save();
+                }
+            }
+        }
+        catch (Exception ex)
         {
-            PotfilePath = dialog.FileName;
-            App.Settings.Settings.PotfilePath = dialog.FileName;
-            App.Settings.Save();
+            StatusMessage = $"Error: {ex.Message}";
         }
     }
 
