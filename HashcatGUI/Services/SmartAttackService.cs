@@ -120,8 +120,8 @@ public static class SmartAttackService
         var bitcoinRule = GetBitcoinRulePath();
 
         // Find large wordlists
-        var rockyou = FindWordlist("rockyou.txt");
-        var weakpass = FindWordlist("weakpass_3a.txt") ?? FindWordlist("weakpass_3.txt") ?? FindWordlist("weakpass_2a.txt");
+        var rockyou = FindWordlist("rockyou.txt", hashcatDir);
+        var weakpass = FindWordlist("weakpass_3a.txt", hashcatDir) ?? FindWordlist("weakpass_3.txt", hashcatDir) ?? FindWordlist("weakpass_2a.txt", hashcatDir);
 
         return new SmartAttackProfile
         {
@@ -229,12 +229,42 @@ public static class SmartAttackService
     /// <summary>
     /// Finds a wordlist in common locations.
     /// </summary>
-    private static string? FindWordlist(string filename)
+    private static string? FindWordlist(string filename, string? hashcatDir = null)
     {
+        // First check hashcat directory (most likely location)
+        if (!string.IsNullOrEmpty(hashcatDir))
+        {
+            var inHashcat = Path.Combine(hashcatDir, filename);
+            if (File.Exists(inHashcat))
+                return inHashcat;
+
+            var inWordlists = Path.Combine(hashcatDir, "wordlists", filename);
+            if (File.Exists(inWordlists))
+                return inWordlists;
+        }
+
+        // Also check from App.Settings
+        var hashcatPath = App.Settings?.Settings?.HashcatPath;
+        if (!string.IsNullOrEmpty(hashcatPath))
+        {
+            var settingsHashcatDir = Path.GetDirectoryName(hashcatPath);
+            if (settingsHashcatDir != null && settingsHashcatDir != hashcatDir)
+            {
+                var inHashcat = Path.Combine(settingsHashcatDir, filename);
+                if (File.Exists(inHashcat))
+                    return inHashcat;
+
+                var inWordlists = Path.Combine(settingsHashcatDir, "wordlists", filename);
+                if (File.Exists(inWordlists))
+                    return inWordlists;
+            }
+        }
+
         var searchPaths = new[]
         {
             // Common wordlist locations
             @"C:\wordlists",
+            @"C:\Users\alina\Downloads\btc_test\hashcat-6.2.6",
             @"C:\Users\alina\Downloads\wordlists",
             @"C:\Users\alina\Downloads",
             @"D:\wordlists",
@@ -251,23 +281,6 @@ public static class SmartAttackService
                 return fullPath;
         }
 
-        // Also search in hashcat directory
-        var hashcatPath = App.Settings?.Settings?.HashcatPath;
-        if (!string.IsNullOrEmpty(hashcatPath))
-        {
-            var hashcatDir = Path.GetDirectoryName(hashcatPath);
-            if (hashcatDir != null)
-            {
-                var inHashcat = Path.Combine(hashcatDir, filename);
-                if (File.Exists(inHashcat))
-                    return inHashcat;
-
-                var inWordlists = Path.Combine(hashcatDir, "wordlists", filename);
-                if (File.Exists(inWordlists))
-                    return inWordlists;
-            }
-        }
-
         return null;
     }
 
@@ -282,8 +295,8 @@ public static class SmartAttackService
         var bitcoinRule = GetBitcoinRulePath();
 
         // Find large wordlists
-        var rockyou = FindWordlist("rockyou.txt");
-        var weakpass = FindWordlist("weakpass_3a.txt") ?? FindWordlist("weakpass_3.txt");
+        var rockyou = FindWordlist("rockyou.txt", hashcatDir);
+        var weakpass = FindWordlist("weakpass_3a.txt", hashcatDir) ?? FindWordlist("weakpass_3.txt", hashcatDir);
 
         return new SmartAttackProfile
         {
