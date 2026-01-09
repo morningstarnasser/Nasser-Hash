@@ -103,9 +103,11 @@ public partial class SmartAttackViewModel : ViewModelBase
 
                 var totalSpeed = status.Devices.Sum(d => d.Speed);
                 GpuSpeed = FormatSpeed(totalSpeed);
-
-                // Debug: Show that we received status
-                AddLog($"[STATUS] Temp: {GpuTemperature}°C, Util: {GpuUtilization}%, Speed: {GpuSpeed}");
+            }
+            else
+            {
+                // No device info available
+                GpuSpeed = "0 H/s";
             }
 
             // Update progress
@@ -113,7 +115,11 @@ public partial class SmartAttackViewModel : ViewModelBase
             {
                 var current = status.Progress[0];
                 var total = status.Progress[1];
-                OverallProgress = total > 0 ? (double)current / total * 100 : 0;
+                if (total > 0)
+                {
+                    var phaseProgress = (double)current / total * 100;
+                    // Don't override overall progress with phase progress if we're tracking multiple wallets
+                }
             }
 
             // Update ETA
@@ -121,6 +127,12 @@ public partial class SmartAttackViewModel : ViewModelBase
             {
                 var eta = DateTimeOffset.FromUnixTimeSeconds(status.EstimatedStop).LocalDateTime - DateTime.Now;
                 EstimatedTimeRemaining = eta > TimeSpan.Zero ? FormatTimeSpan(eta) : "Finishing...";
+            }
+
+            // Update recovered count
+            if (status.RecoveredHashes != null && status.RecoveredHashes.Length >= 2)
+            {
+                // Could show recovered/total here
             }
         });
     }

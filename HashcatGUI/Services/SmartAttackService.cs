@@ -119,11 +119,15 @@ public static class SmartAttackService
         var bitcoinWordlist = GetBitcoinWordlistPath();
         var bitcoinRule = GetBitcoinRulePath();
 
+        // Find large wordlists
+        var rockyou = FindWordlist("rockyou.txt");
+        var weakpass = FindWordlist("weakpass_3a.txt") ?? FindWordlist("weakpass_3.txt") ?? FindWordlist("weakpass_2a.txt");
+
         return new SmartAttackProfile
         {
             Name = "Very Old Wallet Attack (2009-2012)",
             Description = "High success probability - early adopters used simple passwords",
-            EstimatedDurationMinutes = 90,
+            EstimatedDurationMinutes = 120,
             SuccessProbability = 0.70,
             Phases = new List<AttackPhase>
             {
@@ -139,11 +143,11 @@ public static class SmartAttackService
                 new()
                 {
                     Order = 2,
-                    Name = "Common Passwords",
-                    Description = "Try most common passwords directly",
+                    Name = "Rockyou Direct",
+                    Description = "Try rockyou.txt directly (14M passwords)",
                     AttackMode = 0,
-                    Wordlist = knockoutWordlist,
-                    EstimatedDurationMinutes = 3
+                    Wordlist = rockyou ?? knockoutWordlist,
+                    EstimatedDurationMinutes = 5
                 },
                 new()
                 {
@@ -158,12 +162,12 @@ public static class SmartAttackService
                 new()
                 {
                     Order = 4,
-                    Name = "Simple Rules",
-                    Description = "Apply basic transformations",
+                    Name = "Rockyou + Best64",
+                    Description = "Rockyou with best64 rules",
                     AttackMode = 0,
-                    Wordlist = knockoutWordlist,
+                    Wordlist = rockyou ?? knockoutWordlist,
                     Rules = best64 != null ? new List<string> { best64 } : new(),
-                    EstimatedDurationMinutes = 10
+                    EstimatedDurationMinutes = 15
                 },
                 new()
                 {
@@ -192,37 +196,79 @@ public static class SmartAttackService
                 new()
                 {
                     Order = 7,
-                    Name = "Bitcoin + Year Hybrid",
-                    Description = "Bitcoin words + years 2009-2012",
+                    Name = "Rockyou + Year Hybrid",
+                    Description = "Rockyou words + years",
                     AttackMode = 6,
-                    Wordlist = bitcoinWordlist ?? knockoutWordlist,
+                    Wordlist = rockyou ?? knockoutWordlist,
                     Mask = "?d?d?d?d",
-                    EstimatedDurationMinutes = 15
+                    EstimatedDurationMinutes = 20
                 },
                 new()
                 {
                     Order = 8,
+                    Name = "Weakpass Direct",
+                    Description = "Try large weakpass wordlist",
+                    AttackMode = 0,
+                    Wordlist = weakpass ?? rockyou ?? knockoutWordlist,
+                    EstimatedDurationMinutes = 30
+                },
+                new()
+                {
+                    Order = 9,
                     Name = "Extended Rules",
                     Description = "Apply knockout rules",
                     AttackMode = 0,
                     Wordlist = knockoutWordlist,
                     Rules = knockoutRule != null ? new List<string> { knockoutRule } : new(),
                     EstimatedDurationMinutes = 25
-                },
-                new()
-                {
-                    Order = 9,
-                    Name = "All Printable Short",
-                    Description = "Try all 4-5 char combinations",
-                    AttackMode = 3,
-                    Mask = "?a?a?a?a?a",
-                    IncrementMode = true,
-                    IncrementMin = 4,
-                    IncrementMax = 5,
-                    EstimatedDurationMinutes = 10
                 }
             }
         };
+    }
+
+    /// <summary>
+    /// Finds a wordlist in common locations.
+    /// </summary>
+    private static string? FindWordlist(string filename)
+    {
+        var searchPaths = new[]
+        {
+            // Common wordlist locations
+            @"C:\wordlists",
+            @"C:\Users\alina\Downloads\wordlists",
+            @"C:\Users\alina\Downloads",
+            @"D:\wordlists",
+            @"C:\hashcat\wordlists",
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "wordlists"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", "wordlists"),
+        };
+
+        foreach (var basePath in searchPaths)
+        {
+            var fullPath = Path.Combine(basePath, filename);
+            if (File.Exists(fullPath))
+                return fullPath;
+        }
+
+        // Also search in hashcat directory
+        var hashcatPath = App.Settings?.Settings?.HashcatPath;
+        if (!string.IsNullOrEmpty(hashcatPath))
+        {
+            var hashcatDir = Path.GetDirectoryName(hashcatPath);
+            if (hashcatDir != null)
+            {
+                var inHashcat = Path.Combine(hashcatDir, filename);
+                if (File.Exists(inHashcat))
+                    return inHashcat;
+
+                var inWordlists = Path.Combine(hashcatDir, "wordlists", filename);
+                if (File.Exists(inWordlists))
+                    return inWordlists;
+            }
+        }
+
+        return null;
     }
 
     private static SmartAttackProfile GenerateOldProfile(string hashcatDir)
@@ -231,14 +277,19 @@ public static class SmartAttackService
         var knockoutRule = FindFile(hashcatDir, "knockout_hash.rule");
         var oneRule = FindFile(hashcatDir, "rules", "OneRuleToRuleThemAll.rule") ??
                       FindFile(hashcatDir, "rules", "OneRule.rule");
+        var best64 = FindFile(hashcatDir, "rules", "best64.rule");
         var bitcoinWordlist = GetBitcoinWordlistPath();
         var bitcoinRule = GetBitcoinRulePath();
+
+        // Find large wordlists
+        var rockyou = FindWordlist("rockyou.txt");
+        var weakpass = FindWordlist("weakpass_3a.txt") ?? FindWordlist("weakpass_3.txt");
 
         return new SmartAttackProfile
         {
             Name = "Old Wallet Attack (2012-2014)",
             Description = "Good success probability - slightly more complex passwords",
-            EstimatedDurationMinutes = 150,
+            EstimatedDurationMinutes = 180,
             SuccessProbability = 0.55,
             Phases = new List<AttackPhase>
             {
@@ -254,6 +305,25 @@ public static class SmartAttackService
                 new()
                 {
                     Order = 2,
+                    Name = "Rockyou Direct",
+                    Description = "Try rockyou.txt (14M passwords)",
+                    AttackMode = 0,
+                    Wordlist = rockyou ?? knockoutWordlist,
+                    EstimatedDurationMinutes = 5
+                },
+                new()
+                {
+                    Order = 3,
+                    Name = "Rockyou + Best64",
+                    Description = "Rockyou with best64 rules",
+                    AttackMode = 0,
+                    Wordlist = rockyou ?? knockoutWordlist,
+                    Rules = best64 != null ? new List<string> { best64 } : new(),
+                    EstimatedDurationMinutes = 15
+                },
+                new()
+                {
+                    Order = 4,
                     Name = "Bitcoin + Rules",
                     Description = "Bitcoin wordlist with crypto rules",
                     AttackMode = 0,
@@ -263,56 +333,34 @@ public static class SmartAttackService
                 },
                 new()
                 {
-                    Order = 3,
-                    Name = "Common + Year Patterns",
-                    Description = "Bitcoin-related words with years",
-                    AttackMode = 0,
-                    Wordlist = knockoutWordlist,
-                    EstimatedDurationMinutes = 5
-                },
-                new()
-                {
-                    Order = 4,
+                    Order = 5,
                     Name = "OneRule Attack",
                     Description = "Comprehensive rule-based mutations",
                     AttackMode = 0,
-                    Wordlist = knockoutWordlist,
+                    Wordlist = rockyou ?? knockoutWordlist,
                     Rules = oneRule != null ? new List<string> { oneRule } : new(),
-                    EstimatedDurationMinutes = 30
-                },
-                new()
-                {
-                    Order = 5,
-                    Name = "Bitcoin + Digits",
-                    Description = "Bitcoin words + 2-4 digit suffix",
-                    AttackMode = 6,
-                    Wordlist = bitcoinWordlist ?? knockoutWordlist,
-                    Mask = "?d?d?d?d",
-                    IncrementMode = true,
-                    IncrementMin = 2,
-                    IncrementMax = 4,
-                    EstimatedDurationMinutes = 15
+                    EstimatedDurationMinutes = 45
                 },
                 new()
                 {
                     Order = 6,
-                    Name = "Hybrid Word+Digits",
-                    Description = "Wordlist + 2-4 digit suffix",
+                    Name = "Rockyou + Digits",
+                    Description = "Rockyou words + 2-4 digit suffix",
                     AttackMode = 6,
-                    Wordlist = knockoutWordlist,
+                    Wordlist = rockyou ?? knockoutWordlist,
                     Mask = "?d?d?d?d",
                     IncrementMode = true,
                     IncrementMin = 2,
                     IncrementMax = 4,
-                    EstimatedDurationMinutes = 20
+                    EstimatedDurationMinutes = 25
                 },
                 new()
                 {
                     Order = 7,
-                    Name = "Capitalized + Year",
-                    Description = "Try Cap word + year patterns",
-                    AttackMode = 3,
-                    Mask = "?u?l?l?l?l?l?l?d?d?d?d",
+                    Name = "Weakpass Direct",
+                    Description = "Try large weakpass wordlist",
+                    AttackMode = 0,
+                    Wordlist = weakpass ?? rockyou ?? knockoutWordlist,
                     EstimatedDurationMinutes = 40
                 },
                 new()
@@ -323,7 +371,7 @@ public static class SmartAttackService
                     AttackMode = 0,
                     Wordlist = knockoutWordlist,
                     Rules = knockoutRule != null ? new List<string> { knockoutRule } : new(),
-                    EstimatedDurationMinutes = 28
+                    EstimatedDurationMinutes = 38
                 }
             }
         };
