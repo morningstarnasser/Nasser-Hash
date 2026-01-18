@@ -485,7 +485,7 @@ public class HashcatService : IDisposable
     // Regex patterns for parsing hashcat text output - made more flexible
     private static readonly Regex SpeedRegex = new(@"Speed[.#\d\*]*\s*[:\.]+\s*([\d.,]+)\s*([kMGT]?H/s)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private static readonly Regex ProgressRegex = new(@"Progress\s*[:\.]+\s*([\d]+)\s*/\s*([\d]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-    private static readonly Regex EtaRegex = new(@"Time\.Estimated|ETA\s*[:\.]+\s*(.+?)(?:\s*\(|$)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex EtaRegex = new(@"(?:Time\.Estimated|ETA)\s*[:\.]+\s*(.+?)(?:\s*\(|$)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private static readonly Regex RecoveredRegex = new(@"Recovered\s*[:\.]+\s*(\d+)\s*/\s*(\d+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     private void OnOutputDataReceived(object sender, DataReceivedEventArgs e)
